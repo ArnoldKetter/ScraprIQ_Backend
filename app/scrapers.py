@@ -45,7 +45,7 @@ def scrape_company_team_page(url: str) -> List[Dict[str, str]]:
 
             # If not found in immediate sibling, look within common parent
             if title == 'N/A':
-                parent_container = name_tag.find_parent(lambda tag: tag.name == 'div' and ('team' in tag.get('class', []) or 'person' in tag.get('class', []) or 'elementor-widget-wrap' in tag.get('class', [])), limit=3)
+                parent_container = name_tag.find_parents(lambda tag: tag.name == 'div' and ('team' in tag.get('class', []) or 'person' in tag.get('class', []) or 'elementor-widget-wrap' in tag.get('class', [])), limit=3)
                 if parent_container:
                     # Look for more general text elements within this container that could be titles
                     for p_tag in parent_container.find_all(['p', 'div', 'span']):
