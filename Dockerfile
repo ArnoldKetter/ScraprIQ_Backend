@@ -16,7 +16,6 @@ EXPOSE 8000
 # Command to run the application using Uvicorn
 # Make sure 'main:app' matches your application file (main.py) and FastAPI app instance (app)
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
-```
 
   * `FROM python:3.10-slim-buster`: Specifies the base Python image. Using a `slim` version keeps the image size smaller.
   * `WORKDIR /app`: Sets the working directory inside the container.
