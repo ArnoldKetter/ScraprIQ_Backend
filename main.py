@@ -268,3 +268,18 @@ async def get_all_leads(db: Session = Depends(get_db)):
     """
     leads = db.query(Lead).all()
     return [LeadResponse.model_validate(lead) for lead in leads]
+
+# Endpoint to delete a lead by its ID
+from fastapi import Response
+
+@app.delete("/leads/{lead_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_lead(lead_id: int, db: Session = Depends(get_db)):
+    """
+    Deletes a lead by its ID.
+    """
+    db_lead = db.query(Lead).filter(Lead.id == lead_id).first()
+    if not db_lead:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lead not found")
+    db.delete(db_lead)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)  # No content on successful delete
