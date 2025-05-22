@@ -4,6 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 import os
 from typing import List
+from fastapi.middleware.cors import CORSMiddleware  # Import CORS middleware
 
 # Import newly created modules
 from app.scrapers import scrape_company_team_page
@@ -40,10 +41,25 @@ class Lead(Base):
 
 
 # --- FastAPI Application Setup ---
+
 app = FastAPI(
     title="ScraprIQ Backend API",
     description="API for lead scraping and verification for OutBound IQ.",
     version="0.1.0"
+)
+
+# Configure CORS middleware
+origins = [
+    "http://localhost:3000",  # For local Next.js development
+    "https://scrapr-iq-frontend.vercel.app/",  # Production Vercel frontend domain
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods (GET, POST, etc.)
+    allow_headers=["*"],  # Allows all headers
 )
 
 
