@@ -178,7 +178,71 @@ async def batch_scrape_and_store_leads(
     elif not all_stored_leads: # No URLs provided or genuinely no leads
          return [] # Return empty list if no leads found at all
 
+
     return [LeadResponse.model_validate(lead) for lead in all_stored_leads]
+
+# Main ScraprIQ Endpoint
+@app.post("/scrapr-iq/", response_model=List[LeadResponse], status_code=status.HTTP_200_OK)
+async def scrapr_iq_scrape_company(
+    target_url: str,
+    db: Session = Depends(get_db)
+):
+    """
+    ScraprIQ: Takes a company's 'About Us' or 'Team' page URL,
+    scrapes for employee names and job titles, infers email addresses,
+    verifies them using Hunter.io, and stores the leads.
+    Returns a list of structured leads.
+    """
+    if not target_url:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A target_url must be provided for scraping."
+        )
+
+    print(f"ScraprIQ initiated for: {target_url}")
+    scraped_data = scrape_company_team_page(target_url)
+
+    if not scraped_data:
+        # Return 200 OK with empty list if no leads found (as per typical API design for "no results")
+        # Or raise 404 if "no leads found" is considered an error state for this specific endpoint
+        # For MVP, returning an empty list for no leads is often better than a 404, but the choice depends on consumer expectations.
+        # Let's stick with returning an empty list and 200 OK for now, to differentiate from scraping errors.
+        print(f"No leads found or scraping failed for {target_url}. Returning empty list.")
+        return [] # Return empty list if no leads found
+
+    stored_leads = []
+    for lead_dict in scraped_data:
+        try:
+            lead_in = LeadCreate(**lead_dict)
+            existing_lead = db.query(Lead).filter(Lead.inferred_email == lead_in.inferred_email).first()
+            if existing_lead:
+                # Update existing lead if verification details have changed? Or just skip?
+                # For now, just skip to avoid duplicates, but consider update logic later if needed.
+                print(f"Skipping duplicate lead: {lead_in.inferred_email}")
+                stored_leads.append(existing_lead)
+                continue
+
+            db_lead = Lead(**lead_in.model_dump())
+            db.add(db_lead)
+            db.commit()
+            db.refresh(db_lead)
+            stored_leads.append(db_lead)
+        except Exception as e:
+            db.rollback()
+            print(f"Error storing lead from {target_url} ({lead_dict.get('inferred_email', 'N/A')}): {e}")
+
+    if not stored_leads and scraped_data:
+        # This indicates leads were scraped but none could be stored (e.g., all were duplicates)
+        # This might be an acceptable outcome, so still return 200 OK with the leads that were identified.
+        # If all were duplicates and no new ones were added, all_stored_leads will contain the existing ones.
+        # Adjusting to return `all_stored_leads` which will contain both new and existing leads.
+        # This logic should be robust.
+        return [LeadResponse.model_validate(lead) for lead in stored_leads]
+    elif not stored_leads:
+        # If no leads were scraped AND none were stored (e.g., input was bad, or site returned no data)
+        return [] # Return empty list as per the `if not scraped_data` block
+
+    return [LeadResponse.model_validate(lead) for lead in stored_leads]
 
 # Endpoint to retrieve all leads
 @app.get("/leads/", response_model=List[LeadResponse])
