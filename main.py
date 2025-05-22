@@ -51,7 +51,7 @@ app = FastAPI(
 # Configure CORS middleware
 origins = [
     "http://localhost:3000",  # For local Next.js development
-    "https://scrapr-iq-frontend.vercel.app/",  # Production Vercel frontend domain (no trailing slash)
+    "https://scrapr-iq-frontend.vercel.app",  # Production Vercel frontend domain (no trailing slash)
 ]
 
 app.add_middleware(
