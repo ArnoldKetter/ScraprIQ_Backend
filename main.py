@@ -45,7 +45,7 @@ class Lead(Base):
 app = FastAPI(
     title="ScraprIQ Backend API",
     description="API for lead scraping and verification for OutBound IQ.",
-    version="0.1.0"
+    version="0.1.0" # testing git
 )
 
 # Configure CORS middleware
